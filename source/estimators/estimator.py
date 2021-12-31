@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from ..envs.environment import StructuralModel
 from ..solvers.solver import Solver
+from ..utils.lik_func import *
 
 
 class Estimator(ABC):
@@ -22,6 +23,7 @@ class Estimator(ABC):
 
 class SMMEstimator(Estimator, ABC):
     """Estimator using Simulated Method of Moments"""
+
     def __init__(self, solver: Solver = None, env: StructuralModel = None, estimator_params: dict = None):
         super().__init__(solver=solver, env=env, estimator_params=estimator_params)
 
@@ -34,7 +36,17 @@ class SMMEstimator(Estimator, ABC):
         self.estimator_params.setdefault("grid_start_dict", {})
         self.estimator_params.setdefault("grid_end_dict", {})
         self.estimator_params.setdefault("gird_step_size_dict", {})
+        # TODO: JZH
 
 
+class LikelihoodEstimator(Estimator, ABC):
+    """General likelihood estimator using some kind of given likelihood function"""
+
+    def __init__(self, solver: Solver = None, env: StructuralModel = None, estimator_params: dict = None):
+        super().__init__(solver=solver, env=env, estimator_params=estimator_params)
+        assert "lik_func" in estimator_params  # class LikFunc object (likelihood function) from utils.lik_func
+        self.lik_func = estimator_params['lik_func']
+        assert isinstance(self.lik_func, LikFunc)
+    # TODO: JZH
 
 
