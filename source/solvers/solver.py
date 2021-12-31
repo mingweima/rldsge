@@ -35,8 +35,8 @@ class LinearSolver(Solver, ABC):
 
     def __init__(self, env: StructuralModel = None, solver_params: dict = None):
         super().__init__(env=env, solver_params=solver_params)
-        ACTION_SIZE, OBS_SIZE = 0, 0
-        self.policy_matrix = np.zeros((ACTION_SIZE, OBS_SIZE))  # fill in relevant policy matrices for observations
+        self.policy_matrix = np.zeros((self.env.env_params['action_size'], self.env.env_params[
+            'obs_size']))  # fill in relevant policy matrices for observations
     # TODO: JZH
     # def train(self, training_params: dict = None) -> None:
     #     ...
@@ -50,3 +50,6 @@ class ValueIterationSolver(Solver, ABC):
 
 class A2CSolver(Solver, ABC):
     """Actor-Critic Solver"""
+
+    def __init__(self, env: StructuralModel = None, solver_params: dict = None):
+        super().__init__(env=env, solver_params=solver_params)
