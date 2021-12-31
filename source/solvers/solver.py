@@ -1,3 +1,4 @@
+import pickle
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -13,12 +14,20 @@ class Solver(ABC):
         self.solver_params = solver_params
 
     @abstractmethod
-    def act(self, obs: np.ndarray, evaluation: bool = False) -> np.ndarray:
+    def act(self, obs: np.ndarray, evaluation: bool = True) -> np.ndarray:
         """Acts based on environment"""
 
     @abstractmethod
     def train(self, training_params: dict = None) -> None:
         """Train a solver/agent via interaction with the env"""
+
+    def __str__(self):
+        """Print method for solver for logging"""
+
+    def save(self, name=None):
+        name = str(self) if not name else name
+        with open(f'{name}.pkl', 'wb') as handle:
+            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 class LinearSolver(Solver, ABC):
@@ -26,8 +35,12 @@ class LinearSolver(Solver, ABC):
 
     def __init__(self, env: StructuralModel = None, solver_params: dict = None):
         super().__init__(env=env, solver_params=solver_params)
-        self.policy_matrix_dict = {}  # fill in relevant policy matrices for observations
+        ACTION_SIZE, OBS_SIZE = 0, 0
+        self.policy_matrix = np.zeros((ACTION_SIZE, OBS_SIZE))  # fill in relevant policy matrices for observations
     # TODO: JZH
+    # def train(self, training_params: dict = None) -> None:
+    #     ...
+    #     self.policy_matrix = SOMETHING_CALCULATED
 
 
 class ValueIterationSolver(Solver, ABC):

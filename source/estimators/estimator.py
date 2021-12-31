@@ -1,5 +1,3 @@
-from abc import ABC, abstractmethod
-
 from ..envs.environment import StructuralModel
 from ..solvers.solver import Solver
 from ..utils.lik_func import *
@@ -15,10 +13,13 @@ class Estimator(ABC):
         self.env = env
         self.estimator_params = estimator_params
         self.num_structural_params = env.env_params['num_structural_params']
+        self.estimated_params = None
 
     @abstractmethod
     def estimate(self) -> dict:
         """Outputs estimation using a dict (e.g. dict['k'] = 0.95)"""
+        """How?"""
+        return self.estimator_params
 
 
 class SMMEstimator(Estimator, ABC):
@@ -48,5 +49,3 @@ class LikelihoodEstimator(Estimator, ABC):
         self.lik_func = estimator_params['lik_func']
         assert isinstance(self.lik_func, LikFunc)
     # TODO: JZH
-
-

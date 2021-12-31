@@ -12,16 +12,18 @@ class StructuralModel(gym.Env, ABC):
         self.structural_params = structural_params  # structural params to be estimated
         self.env_params = env_params  # other params related to the environment; must contain num of structural params
         assert "num_structural_params" in self.env_params
+        assert "action_size" in self.env_params
+        assert "obs_size" in self.env_params
 
     @abstractmethod
-    def reset(self):
+    def reset(self) -> np.array:
         """Reset environment like in gym"""
 
     @abstractmethod
-    def step(self, action):
+    def step(self, action: np.array) -> (np.array, float, bool, dict):
         """Step using action like in gym"""
 
-    def update_structural_params(self, structural_params):
+    def update_structural_params(self, structural_params) -> None:
         self.structural_params = structural_params
 
 
@@ -68,6 +70,8 @@ class WhitedBasicModel(StructuralModel, ABC):
                 k ** structural_params['theta']))  # profit function pi(k, z) = z*k**theta
         env_params.setdefault('z_proc_func', log_ar1)  # z process: z(z0, rho, sigma)
         env_params.setdefault('num_structural_params', 5)
+        env_params.setdefault('action_size', 1)
+        env_params.setdefault('obs_size', 2)
 
         super().__init__(structural_params=structural_params, env_params=env_params)
 
@@ -82,29 +86,31 @@ class WhitedBasicModel(StructuralModel, ABC):
         self.state = np.array([k0, z0], dtype=np.float32)
         self.done = False
 
-    def reset(self):
+    def reset(self) -> np.array:
         k0, z0 = self.env_params['initial_state']
         self.state = np.array([k0, z0], dtype=np.float32)
         self.steps = 0
         self.done = False
         return self.state
 
-    def step(self, action: float):  # action is investment I_t over capital k_t
+    def step(self, action: np.array):  # action is investment I_t over capital k_t
         k_curr = self.state[0]
         z_curr = self.state[1]
-        i_curr = action * k_curr
+        i_curr = action[0] * k_curr
         # update z
         z_new = self.env_params['z_proc_func'](z_curr, self.structural_params['rho'], self.structural_params['sigma'])
         # update k
         k_new = (1 - self.structural_params['delta']) * k_curr + i_curr
         # reward function
-        # print(self.pi(k0, z0),  self.psi(I0, k0), I0)
         reward = self.env_params['pi_func'](k_curr, z_curr) - self.env_params['psi_func'](i_curr, k_curr) - i_curr
         # new state
         self.state = np.array([k_new, z_new], dtype=np.float32)
         # add step
         self.steps += 1
-        # decide end or not
+        # decide to end or not
         if self.steps == self.env_params['max_steps']:
             self.done = True
         return self.state, reward, self.done, {}
+
+    def render(self, mode="human"):
+        print(f"Capital k={self.state[0]}")
