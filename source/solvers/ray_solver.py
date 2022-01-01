@@ -42,7 +42,7 @@ class RaySolver(Solver):
         self.trainer = trainer
 
     def act(self, obs: np.ndarray, evaluation: bool = True) -> np.ndarray:
-        return self.trainer.compute_action(obs)
+        return self.trainer.compute_single_action(obs)
 
     def train(self, training_params: dict = None) -> None:
         episodes = self.solver_params.get("episodes", 50)
@@ -55,6 +55,6 @@ class RaySolver(Solver):
             if verbose and episodes % print_freq == 0:
                 print(pretty_print(result))
 
-            if i % save_freq == 0:
+            if i > 0 and i % save_freq == 0:
                 checkpoint = self.trainer.save()
                 print("checkpoint saved at", checkpoint)
