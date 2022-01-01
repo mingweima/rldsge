@@ -1,14 +1,27 @@
 from abc import ABC, abstractmethod
 
 import gym
+
+gym.logger.set_level(40)
+
+import ray
+from ray.rllib.agents import ppo
+from ray.tune.registry import register_env
+from ray.tune.logger import pretty_print
+
 import numpy as np
 
-from ..utils.math_utils import log_ar1
+from source.utils.math_utils import log_ar1
 
 
 class StructuralModel(gym.Env, ABC):
     @abstractmethod
-    def __init__(self, structural_params: dict = None, env_params: dict = None):
+    def __init__(self, env_config=None):
+        if env_config is None:
+            env_config = {}
+        assert "structural_params" in env_config
+        assert "env_params" in env_config
+        structural_params, env_params = env_config['structural_params'], env_config['env_params']
         self.structural_params = structural_params  # structural params to be estimated
         self.env_params = env_params  # other params related to the environment; must contain num of structural params
         assert "num_structural_params" in self.env_params
@@ -32,7 +45,12 @@ class VRToyModel(StructuralModel, ABC):
         https://www.sas.upenn.edu/~jesusfv/ejemplo.pdf
         This env takes in no actions, so it is a process that does not interact with the agent"""
 
-    def __init__(self, structural_params: dict = None, env_params: dict = None):
+    def __init__(self, env_config=None):
+        if env_config is None:
+            env_config = {}
+        assert "structural_params" in env_config
+        assert "env_params" in env_config
+        structural_params, env_params = env_config['structural_params'], env_config['env_params']
         structural_params.setdefault('a', 0.5)
         structural_params.setdefault('b', 0.3)
         structural_params.setdefault('w_mean', 0.)
@@ -41,6 +59,9 @@ class VRToyModel(StructuralModel, ABC):
 
         # RL related settings
         env_params.setdefault('max_steps', 100)
+
+        super().__init__({"structural_params": structural_params, "env_params": env_params})
+
         # Action: fraction of capital k to invest (I/k); if action size = 100, 0.00-0.99 of all capital as investment
         self.action_space = gym.spaces.Box(np.array([0, ]), np.array([1, ]), dtype=np.float32)
         # Observation: 1D array (k, z)
@@ -54,7 +75,12 @@ class VRToyModel(StructuralModel, ABC):
 class WhitedBasicModel(StructuralModel, ABC):
     """Basic Model in Strebulaev and Whited (2012), *Dynamic Models and Structural Estimation*"""
 
-    def __init__(self, structural_params: dict = None, env_params: dict = None):
+    def __init__(self, env_config=None):
+        if env_config is None:
+            env_config = {}
+        assert "structural_params" in env_config
+        assert "env_params" in env_config
+        structural_params, env_params = env_config['structural_params'], env_config['env_params']
         # Set default value of structural params
         structural_params.setdefault('gamma', 0.96)  # discount rate
         structural_params.setdefault('delta', 0.15)  # depreciation of capital
@@ -73,7 +99,7 @@ class WhitedBasicModel(StructuralModel, ABC):
         env_params.setdefault('action_size', 1)
         env_params.setdefault('obs_size', 2)
 
-        super().__init__(structural_params=structural_params, env_params=env_params)
+        super().__init__({"structural_params": structural_params, "env_params": env_params})
 
         # RL related settings
         env_params.setdefault('max_steps', 100)
@@ -86,14 +112,14 @@ class WhitedBasicModel(StructuralModel, ABC):
         self.state = np.array([k0, z0], dtype=np.float32)
         self.done = False
 
-    def reset(self) -> np.array:
+    def reset(self) -> np.ndarray:
         k0, z0 = self.env_params['initial_state']
         self.state = np.array([k0, z0], dtype=np.float32)
         self.steps = 0
         self.done = False
         return self.state
 
-    def step(self, action: np.array):  # action is investment I_t over capital k_t
+    def step(self, action: np.ndarray):  # action is investment I_t over capital k_t
         k_curr = self.state[0]
         z_curr = self.state[1]
         i_curr = action[0] * k_curr
@@ -114,3 +140,41 @@ class WhitedBasicModel(StructuralModel, ABC):
 
     def render(self, mode="human"):
         print(f"Capital k={self.state[0]}")
+
+
+if __name__ == "__main__":
+    ray.init()
+
+
+    def env_creator(env_config):
+        return WhitedBasicModel(env_config=env_config)
+
+
+    register_env("whited_basic_env", env_creator)
+    trainer = ppo.PPOTrainer(env="whited_basic_env", config={
+        "env_config": {"structural_params": {}, "env_params": {}},  # config to pass to env class
+        "framework": "torch",
+        "num_workers": 5,
+    })
+
+    for i in range(30):
+        # Perform one iteration of training the policy with PPO
+        result = trainer.train()
+        print(pretty_print(result))
+
+        if i % 10 == 0:
+            checkpoint = trainer.save()
+            print("checkpoint saved at", checkpoint)
+
+    # instantiate env class
+    env = WhitedBasicModel(env_config={"structural_params": {}, "env_params": {}})
+
+    # run until episode ends
+    episode_reward = 0
+    done = False
+    obs = env.reset()
+    while not done:
+        action = trainer.compute_action(obs)
+        obs, reward, done, info = env.step(action)
+        episode_reward += reward
+        print(obs, reward, done, info)

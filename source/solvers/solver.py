@@ -1,9 +1,12 @@
 import pickle
+import sys
 from abc import ABC, abstractmethod
 
 import numpy as np
 
-from ..envs.environment import StructuralModel
+sys.path.append("..")
+
+from source.envs.environment import StructuralModel
 
 
 class Solver(ABC):
@@ -46,10 +49,3 @@ class LinearSolver(Solver, ABC):
 class ValueIterationSolver(Solver, ABC):
     """Grid search value function iteration solver"""
     # TODO: JZH
-
-
-class A2CSolver(Solver, ABC):
-    """Actor-Critic Solver"""
-
-    def __init__(self, env: StructuralModel = None, solver_params: dict = None):
-        super().__init__(env=env, solver_params=solver_params)
