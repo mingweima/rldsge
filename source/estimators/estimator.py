@@ -8,11 +8,11 @@ class Estimator(ABC):
        and outputs estimated structural params
     """
 
-    def __init__(self, solver: Solver = None, env: StructuralModel = None, estimator_params: dict = None):
+    def __init__(self, solver: Solver = None, estimator_params: dict = None):
         self.solver = solver
-        self.env = env
+        self.env = solver.env
         self.estimator_params = estimator_params
-        self.num_structural_params = env.env_params['num_structural_params']
+        self.num_structural_params = self.env.env_params['num_structural_params']
         self.estimated_params = None
 
     @abstractmethod
@@ -43,8 +43,8 @@ class SMMEstimator(Estimator, ABC):
 class LikelihoodEstimator(Estimator, ABC):
     """General likelihood estimator using some kind of given likelihood function"""
 
-    def __init__(self, solver: Solver = None, env: StructuralModel = None, estimator_params: dict = None):
-        super().__init__(solver=solver, env=env, estimator_params=estimator_params)
+    def __init__(self, solver: Solver = None, estimator_params: dict = None):
+        super().__init__(solver=solver, estimator_params=estimator_params)
         assert "lik_func" in estimator_params  # class LikFunc object (likelihood function) from utils.lik_func
         self.lik_func = estimator_params['lik_func']
         assert isinstance(self.lik_func, LikFunc)
