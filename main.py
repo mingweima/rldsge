@@ -2,13 +2,13 @@ import sys
 
 import gym
 import ray
-from ray.rllib.agents import ppo, a3c, cql, ddpg
+from ray.rllib.agents import ppo, ddpg
 
 gym.logger.set_level(40)
 
 sys.path.append("..")
 
-from source.envs.environment import WhitedBasicModel
+from source.envs.env import WhitedBasicModel
 from source.solvers.ray_solver import RaySolver
 
 # A3C_Trainer = a3c.A3CTrainer
@@ -18,13 +18,15 @@ DDPG_Trainer = ddpg.DDPGTrainer
 
 if __name__ == "__main__":
     ray.init()
-    env = WhitedBasicModel(env_config={"structural_params": {}, "env_params": {}})
+    env = WhitedBasicModel(env_config={"structural_params": {},
+                                       "env_params": {},
+                                       "is_mutable": False, })
     solver = RaySolver(env=env,
                        trainer=PPO_Trainer,
-                       solver_params={"verbose": True, "episodes": 30,
+                       solver_params={"verbose": True, "episodes": 20,
                                       "trainer_config": {
                                           "num_workers": 3,
-                                          "gamma": env.structural_params.get("gamma", 0.99),
+                                          "gamma": env.current_structural_params.get("gamma", 0.99),
                                       }
                                       })
     solver.train()

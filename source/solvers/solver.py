@@ -6,7 +6,7 @@ import numpy as np
 
 sys.path.append("..")
 
-from source.envs.environment import StructuralModel
+from source.envs.env import StructuralModel
 
 
 class Solver(ABC):

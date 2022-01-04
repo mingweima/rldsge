@@ -1,4 +1,4 @@
-from ..envs.environment import StructuralModel
+from ..envs.env import StructuralModel
 from ..solvers.solver import Solver
 from ..utils.lik_func import *
 

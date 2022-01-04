@@ -14,7 +14,7 @@ from ray.rllib.agents.trainer import Trainer
 sys.path.append("..")
 
 from source.solvers.solver import Solver
-from source.envs.environment import StructuralModel
+from source.envs.env import StructuralModel
 
 
 class RaySolver(Solver):
@@ -33,15 +33,15 @@ class RaySolver(Solver):
         register_env("my-env", env_creator)
         config = {
             # config to pass to env class
-            "env_config": {"structural_params": env.structural_params, "env_params": env.env_params},
+            "env_config": {"structural_params": env.structural_params, "env_params": env.env_params,
+                           "is_mutable": env.is_mutable},
             "framework": "torch",
         }
         config.update(self.trainer_config)
-        trainer = trainer(env="my-env", config=config)
+        trainer_instance = trainer(env="my-env", config=config)  # create an instance of Trainer
+        self.trainer = trainer_instance
 
-        self.trainer = trainer
-
-    def act(self, obs: np.ndarray, evaluation: bool = True) -> np.ndarray:
+    def act(self, obs: np.ndarray, evaluation: bool = True) -> int:
         return self.trainer.compute_single_action(obs)
 
     def train(self, training_params: dict = None) -> None:
@@ -50,7 +50,7 @@ class RaySolver(Solver):
         print_freq = self.solver_params.get("print_freq", episodes // 10)
         verbose = self.solver_params.get("verbose", False)
         for i in range(episodes):
-            # Perform one iteration of training the policy with PPO
+            # Perform one iteration of training the policy with the method
             result = self.trainer.train()
             if verbose and episodes % print_freq == 0:
                 print(pretty_print(result))
@@ -58,3 +58,4 @@ class RaySolver(Solver):
             if i > 0 and i % save_freq == 0:
                 checkpoint = self.trainer.save()
                 print("checkpoint saved at", checkpoint)
+
