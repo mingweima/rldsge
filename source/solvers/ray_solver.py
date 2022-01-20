@@ -24,11 +24,11 @@ class RaySolver(Solver):
                  trainer: Type[Trainer] = ppo.PPOTrainer):
         super().__init__(env, solver_params)
 
+        self.trainer_config = solver_params.get("trainer_config", {})
+
         def env_creator(env_config):
             env.__init__(env_config=env_config)
             return env
-
-        self.trainer_config = solver_params.get("trainer_config", {})
 
         register_env("my-env", env_creator)
         config = {
@@ -58,4 +58,3 @@ class RaySolver(Solver):
             if i > 0 and i % save_freq == 0:
                 checkpoint = self.trainer.save()
                 print("checkpoint saved at", checkpoint)
-

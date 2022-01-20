@@ -27,6 +27,11 @@ class Solver(ABC):
     def __str__(self):
         """Print method for solver for logging"""
 
+    def sample(self, max_episodes=None) -> np.ndarray:
+        """Sample a single trajectory of observation
+        :returns: an array of shape (N, T) where N is the dim of observation and T is the number of episodes
+            and T <= max_episodes"""
+
     def save(self, name=None):
         name = str(self) if not name else name
         with open(f'{name}.pkl', 'wb') as handle:

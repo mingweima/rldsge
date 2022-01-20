@@ -113,7 +113,7 @@ class WhitedBasicModel(StructuralModel, ABC):
         self.done = False
         return self.state
 
-    def step(self, action, resample_param=False):  # action is investment I_t over capital k_t
+    def step(self, action, resample_param=True):  # action is investment I_t over capital k_t
         k_curr = self.state[0]
         z_curr = self.state[1]
         action = int(action)
