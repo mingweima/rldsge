@@ -58,3 +58,22 @@ class RaySolver(Solver):
             if i > 0 and i % save_freq == 0:
                 checkpoint = self.trainer.save()
                 print("checkpoint saved at", checkpoint)
+    
+    def sample(self, sample_params: dict = None):
+        n_state = sample_params.get("n_state", 1)
+        n_action = sample_params.get("n_action", 1)
+        episode_reward = 0
+        done = False
+        state = self.env.reset()
+        action = self.act(state)
+        obs_vec = np.append(state[:n_state],action[:n_action])
+        obs_vec = obs_vec.reshape(np.append(1,obs_vec.shape))
+        while not done:
+            action = self.act(state)
+            state, reward, done, info = self.env.step(action, resample_param=False)
+            episode_reward += reward
+            add_vec = np.append(state[:n_state],action[:n_action])
+            add_vec = add_vec.reshape(np.append(1,add_vec.shape))
+            obs_vec = np.append(obs_vec, add_vec, axis=0)
+        return obs_vec.T
+        
