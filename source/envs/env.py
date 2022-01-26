@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+from typing import Dict
 
 import gym
 import numpy as np
@@ -14,6 +15,7 @@ class StructuralModel(gym.Env, ABC):
     def __init__(self, env_config: dict = None):
         if env_config is None:
             env_config = {}
+        self.env_config = env_config
         assert "structural_params" in env_config  # structural params is a grid {param: [min, max]} if mutable,
         # and is {param: value if not mutable}
         assert "env_params" in env_config
@@ -29,6 +31,7 @@ class StructuralModel(gym.Env, ABC):
 
         assert isinstance(env_config["is_mutable"], bool)
         self.is_mutable = env_config['is_mutable']
+        self.allow_resample_param = True
         # set current_structural_params. if mutable we need to use OrderedDict to make sure observations are in order
         self.current_structural_params = OrderedDict() if self.is_mutable else self.structural_params
 
@@ -37,14 +40,22 @@ class StructuralModel(gym.Env, ABC):
         """Reset environment like in gym"""
 
     @abstractmethod
-    def step(self, action: np.ndarray) -> (np.ndarray, float, bool, dict):
+    def step(self, action: np.ndarray, resample_param: bool = False) -> (np.ndarray, float, bool, dict):
+        assert not (not self.is_mutable) and resample_param
         """Step using action like in gym"""
 
     def sample_structural_params(self) -> None:
         """generate uniform samples from grid"""
         assert self.is_mutable
+        assert self.allow_resample_param
         for struct_param, grid in self.structural_params.items():
             self.current_structural_params[struct_param] = np.random.uniform(low=grid[0], high=grid[1], size=None)
+
+    def set_structural_params(self, param_dict: Dict[str, float]):
+        """fix param dict for a mutable env for testing"""
+        assert self.is_mutable
+        self.current_structural_params = param_dict
+        self.allow_resample_param = False
 
     def structural_params_to_array(self) -> np.ndarray:
         """convert OrderedDict into np array"""
@@ -104,7 +115,8 @@ class WhitedBasicModel(StructuralModel, ABC):
     def reset(self) -> np.ndarray:
         k0, z0 = self.env_params['initial_state']
         if self.is_mutable:
-            self.sample_structural_params()
+            if self.allow_resample_param:
+                self.sample_structural_params()
             struct_param_array = self.structural_params_to_array()
             self.state = np.concatenate((np.array([k0, z0], dtype=np.float32), struct_param_array), axis=0).flatten()
         else:

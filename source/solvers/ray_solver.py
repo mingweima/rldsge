@@ -1,5 +1,5 @@
 import sys
-from typing import Type
+from typing import Type, Dict
 
 import gym
 import numpy as np
@@ -41,8 +41,25 @@ class RaySolver(Solver):
         trainer_instance = trainer(env="my-env", config=config)  # create an instance of Trainer
         self.trainer = trainer_instance
 
-    def act(self, obs: np.ndarray, evaluation: bool = True) -> int:
+    def act(self, obs: np.ndarray, evaluation: bool = True) -> np.ndarray:
         return self.trainer.compute_single_action(obs)
+
+    def sample(self, env: StructuralModel = None, param_dict: Dict[str, float] = None) -> np.ndarray:
+        """Sample a single observation paxth
+        :return: obs of size (N, T), where N is the dim of obs, T is eps length """
+        env = self.env if not env else env
+        if param_dict is not None:
+            env.set_structural_params(param_dict)
+        done = False
+        obs_step = env.reset()
+        obs = None
+        while not done:
+            if obs is None:
+                obs = obs_step.reshape(-1, 1)
+            action = self.act(obs_step)
+            obs_step, _, done, _ = env.step(action, resample_param=False)
+            obs = np.concatenate((obs, obs_step.reshape(-1, 1)), axis=1)
+        return obs
 
     def train(self, training_params: dict = None) -> None:
         episodes = self.solver_params.get("episodes", 50)

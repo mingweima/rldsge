@@ -1,6 +1,7 @@
 import pickle
 import sys
 from abc import ABC, abstractmethod
+from typing import Dict
 
 import numpy as np
 
@@ -27,7 +28,8 @@ class Solver(ABC):
     def __str__(self):
         """Print method for solver for logging"""
 
-    def sample(self, max_episodes=None) -> np.ndarray:
+    @abstractmethod
+    def sample(self, param_dict: Dict[str, float] = None, max_episodes=None) -> np.ndarray:
         """Sample a single trajectory of observation
         :returns: an array of shape (N, T) where N is the dim of observation and T is the number of episodes
             and T <= max_episodes"""
@@ -53,4 +55,4 @@ class LinearSolver(Solver, ABC):
 
 class ValueIterationSolver(Solver, ABC):
     """Grid search value function iteration solver"""
-    # TODO: JZH
+    # TODO (JZH)
