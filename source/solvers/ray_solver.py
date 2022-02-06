@@ -3,6 +3,7 @@ from typing import Type, Dict
 
 import gym
 import numpy as np
+from sklearn.utils import resample
 
 gym.logger.set_level(40)
 
@@ -53,13 +54,22 @@ class RaySolver(Solver):
         done = False
         obs_step = env.reset()
         obs = None
+        action = None
+        reward = None
         while not done:
             if obs is None:
                 obs = obs_step.reshape(-1, 1)
-            action = self.act(obs_step)
-            obs_step, _, done, _ = env.step(action, resample_param=False)
+            action_step = self.act(obs_step)
+            if action is None:
+                action = action_step.reshape(-1,1)
+            obs_step, reward_step, done, _ = env.step(action_step, resample_param=False)
             obs = np.concatenate((obs, obs_step.reshape(-1, 1)), axis=1)
-        return obs
+            action = np.concatenate((action, action_step.reshape(-1, 1)), axis=1)
+            if reward is None:
+                reward = reward_step.reshape(-1,1)
+            else:
+                reward = np.concatenate((reward, reward_step.reshape(-1, 1)), axis=1)
+        return obs,action,reward
 
     def train(self, training_params: dict = None) -> None:
         episodes = self.solver_params.get("episodes", 50)
